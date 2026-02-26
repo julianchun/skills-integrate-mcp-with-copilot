@@ -1,4 +1,95 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // Git Branch Line Background Animation
+  (function initBranchAnimation() {
+    const canvas = document.createElement("canvas");
+    canvas.id = "branch-canvas";
+    document.body.prepend(canvas);
+
+    const ctx = canvas.getContext("2d");
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    const LANE_COUNT = 5;
+    const COMMIT_SPACING = 160;
+    const LINE_COLOR = "#558b2f";
+    const NODE_COLOR = "#7cb342";
+    const LINE_WIDTH = 2;
+    const NODE_RADIUS = 5;
+
+    // Pre-generate branch/merge events at fixed x positions
+    const events = [];
+    for (let i = 0; i < 30; i++) {
+      const fromLane = Math.floor(Math.random() * LANE_COUNT);
+      let toLane = Math.floor(Math.random() * LANE_COUNT);
+      if (toLane === fromLane) toLane = (fromLane + 1) % LANE_COUNT;
+      events.push({ x: 250 + i * 260 + Math.random() * 80, fromLane, toLane });
+    }
+
+    let scrollX = 0;
+
+    function getLaneY(lane) {
+      const spacing = canvas.height / (LANE_COUNT + 1);
+      return spacing * (lane + 1);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw horizontal lane lines
+      for (let lane = 0; lane < LANE_COUNT; lane++) {
+        const y = getLaneY(lane);
+        ctx.strokeStyle = LINE_COLOR;
+        ctx.lineWidth = LINE_WIDTH;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+
+      // Draw branch/merge connectors as bezier curves
+      for (const event of events) {
+        const x = ((event.x - scrollX) % (30 * 260)) + scrollX % (30 * 260) - scrollX;
+        const drawX = event.x - (scrollX % (30 * 260));
+        if (drawX < -100 || drawX > canvas.width + 100) continue;
+
+        const fromY = getLaneY(event.fromLane);
+        const toY = getLaneY(event.toLane);
+
+        ctx.strokeStyle = NODE_COLOR;
+        ctx.lineWidth = LINE_WIDTH;
+        ctx.beginPath();
+        ctx.moveTo(drawX, fromY);
+        ctx.bezierCurveTo(drawX + 60, fromY, drawX - 60, toY, drawX, toY);
+        ctx.stroke();
+      }
+
+      // Draw commit nodes on each lane
+      const commitOffset = scrollX % COMMIT_SPACING;
+      for (let lane = 0; lane < LANE_COUNT; lane++) {
+        const y = getLaneY(lane);
+        for (let x = -commitOffset; x < canvas.width + COMMIT_SPACING; x += COMMIT_SPACING) {
+          ctx.beginPath();
+          ctx.arc(x, y, NODE_RADIUS, 0, Math.PI * 2);
+          ctx.fillStyle = "white";
+          ctx.fill();
+          ctx.strokeStyle = NODE_COLOR;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      }
+
+      scrollX += 0.4;
+      requestAnimationFrame(draw);
+    }
+
+    draw();
+  })();
+
   const activitiesList = document.getElementById("activities-list");
   const activitySelect = document.getElementById("activity");
   const signupForm = document.getElementById("signup-form");
